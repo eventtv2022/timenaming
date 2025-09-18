@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование минут</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Бронирование минут</h1>
+    <label for="dateTime">Выберите дату и время:</label>
+    <input type="datetime-local" id="dateTime">
+    
+    <label for="name">Ваше имя:</label>
+    <input type="text" id="name">
+
+    <button id="bookButton">Забронировать</button>
+
+    <h2>Забронированные минуты</h2>
+    <table id="bookingTable">
+        <thead>
+            <tr>
+                <th>Дата и время</th>
+                <th>Имя</th>
+            </tr>
+        </thead>
+        <tbody id="bookingList"></tbody>
+    </table>
+
+    <script src="script.js"></script>
+</body>
+</html>
