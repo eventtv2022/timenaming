@@ -1,27 +1,85 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const bookButton = document.getElementById("bookButton");
-    const dateTimeInput = document.getElementById("dateTime");
-    const nameInput = document.getElementById("name");
-    const bookingList = document.getElementById("bookingList");
+const { createClient } = supabase;
 
-    // Список для хранения забронированных минут
-    const bookings = [];
+// 🔑 ВСТАВЬ СВОИ ДАННЫЕ (Supabase project → Settings → API)
+const supabaseUrl = "https://eventtv2022.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51d3Nidndrc2ZpdHBsYWRodHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMDIzMzUsImV4cCI6MjA3Mzg3ODMzNX0.9Xoy2KPVPNao6cIbtHUqsWRvO5GLtTK5KRrkAeDdQ3k"; // только anon
+const db = createClient(supabaseUrl, supabaseKey);
 
-    bookButton.addEventListener("click", function() {
-        const dateTime = dateTimeInput.value;
-        const name = nameInput.value;
+const bookButton = document.getElementById("bookButton");
+const dateTimeInput = document.getElementById("dateTime");
+const nameInput = document.getElementById("name");
+const bookingList = document.getElementById("bookingList");
+const notification = document.getElementById("notification");
 
-        if (!dateTime || !name) {
-            alert("Пожалуйста, заполните все поля.");
-            return;
-        }
+// Добавление брони
+bookButton.addEventListener("click", async () => {
+  const dateTime = dateTimeInput.value;
+  const name = nameInput.value;
 
-        // Проверка на уникальность бронирования
-        if (bookings.some(booking => booking.dateTime === dateTime)) {
-            alert("Эта минута уже забронирована.");
-            return;
-        }
+  if (!dateTime || !name) {
+    alert("Пожалуйста, заполните все поля.");
+    return;
+  }
 
+  const { error } = await db.from("bookings").insert([{ dateTime, name }]);
+
+  if (error) {
+    console.error("Ошибка вставки:", error.message);
+    alert("Ошибка: " + error.message);
+  } else {
+    dateTimeInput.value = "";
+    nameInput.value = "";
+  }
+});
+
+// Загрузка всех броней
+async function loadBookings() {
+  const { data, error } = await db
+    .from("bookings")
+    .select("*")
+    .order("dateTime", { ascending: true });
+
+  if (error) {
+    console.error("Ошибка загрузки:", error.message);
+    return;
+  }
+
+  bookingList.innerHTML = "";
+  data.forEach(booking => {
+    const row = document.createElement("tr");
+    const dateCell = document.createElement("td");
+    const nameCell = document.createElement("td");
+
+    dateCell.textContent = new Date(booking.dateTime).toLocaleString();
+    nameCell.textContent = booking.name;
+
+    row.appendChild(dateCell);
+    row.appendChild(nameCell);
+    bookingList.appendChild(row);
+  });
+}
+
+// Подписка на изменения (realtime)
+db.channel("bookings-changes")
+  .on(
+    "postgres_changes",
+    { event: "INSERT", schema: "public", table: "bookings" },
+    payload => {
+      console.log("Realtime:", payload);
+      showNotification("Новая бронь добавлена!");
+      loadBookings();
+    }
+  )
+  .subscribe();
+
+function showNotification(message) {
+  notification.textContent = message;
+  notification.classList.remove("hidden");
+  setTimeout(() => notification.classList.add("hidden"), 3000);
+}
+
+// Первоначальная загрузка
+loadBookings();
         // Добавление нового бронирования
         bookings.push({ dateTime, name });
         
@@ -53,4 +111,5 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
 
